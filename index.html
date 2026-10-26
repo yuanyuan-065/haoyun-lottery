@@ -418,12 +418,17 @@
   var shareBtn  = document.getElementById('shareBtn');
   var toastEl   = document.getElementById('toast');
 
-  var SEG_COUNT = 8;              // 与页面上 8 个扇区一致
-  var TARGET    = 0;              // 每次停在「好运」扇区
+  var SEG_COUNT = 8;
   var SEG_ANGLE = 360 / SEG_COUNT;
+  // 从页面上的 8 个扇区实时读取文字，想加/改签文只需改 HTML
+  var SEGS = Array.prototype.map.call(document.querySelectorAll('.label span'), function (el) {
+    return el.textContent.trim();
+  });
+  var KICKERS = ['今日手气 · 上上签', '今日手气 · 大吉签', '今日手气 · 上签', '今日手气 · 中签', '今日手气 · 小吉'];
 
   var rotation  = 0;
   var spinning  = false;
+  var targetSeg = 0;              // 本轮随机命中的扇区下标
   var resultTimer = null;
   var playTimer   = null;
   var spinTimer   = null;
@@ -466,9 +471,10 @@
     unlockMedia();
     if (navigator.vibrate) { try { navigator.vibrate(15); } catch (e) {} }
 
-    // 停在「好运」扇区中间（该扇区中心正对 0°，与顶部指针对齐），留一点随机偏移
+    // 每轮随机挑一个扇区，停在其中央附近
+    targetSeg = Math.floor(Math.random() * SEG_COUNT);
     var jitter = (Math.random() - 0.5) * 16;
-    var targetCenter = TARGET * SEG_ANGLE;
+    var targetCenter = targetSeg * SEG_ANGLE;
     var targetMod = ((-targetCenter + jitter) % 360 + 360) % 360;
     var currentMod = ((rotation % 360) + 360) % 360;
     var delta = ((targetMod - currentMod) % 360 + 360) % 360;
@@ -486,6 +492,12 @@
     window.clearTimeout(spinTimer);
 
     resultTimer = window.setTimeout(function () {
+      // 把弹窗文案换成本轮真实签文 + 随机签头
+      var label = SEGS[targetSeg] || '好运';
+      result.querySelector('.kicker').textContent = KICKERS[Math.floor(Math.random() * KICKERS.length)];
+      result.querySelector('h2').innerHTML = '恭喜你<br>抽到了' + label;
+      result.querySelector('.loading').innerHTML = label + '视频正在赶来<span class="dots"><i></i><i></i><i></i></span>';
+
       result.classList.add('show');
       if (navigator.vibrate) { try { navigator.vibrate([20, 60, 30]); } catch (e) {} }
       playTimer = window.setTimeout(showVideo, 3000);
